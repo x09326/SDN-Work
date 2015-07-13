@@ -1,8 +1,8 @@
-Takeshi's SDN 開發筆記
+X09326's SDN 開發筆記
 ===========
 本資料夾下不定期跟新有關我在 SDN Controller 開發上的一箱相關程式，目前有的東西如下：
   - Ryu
-  - mininet topology with python
+  - mininet topology with python2.7
 
 How to use
 --------------
