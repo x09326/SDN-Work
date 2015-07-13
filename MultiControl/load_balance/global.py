@@ -4,6 +4,8 @@ import logging
 import contextlib
 import liblb
 import pdb
+import json
+
 
 from ryu.lib import hub
 from ryu.lib.hub import StreamServer
@@ -147,21 +149,27 @@ class GlobalAgent(object):
 
     def recv_loop(self):
         while True:
-            header_data = self.socket.recv(liblb.HeaderStruct.size)
-            header = liblb.HeaderStruct.unpack(header_data)[0]
+            json_data = self.socket.recv(64) #modify
+            print json_data
+
+            #pdb.set_trace()
+            decode_data = json.loads(json_data)
+            action = decode_data['action']
+            print decode_data
+            #header = liblb.HeaderStruct.unpack(header_data)[0]
 
             # add new dpid
-            if header == 1:
-                dp_data = self.socket.recv(liblb.DPStruct.size)
-                dpid = liblb.DPStruct.unpack(dp_data)[0]
-
-                if dpid not in self.dpid_to_role:
-                    self.dpid_to_role[dpid] = ROLE_SLAVE
+            if action == 'add_dpid':
+                dpid = decode_data['dpid']               
+                self.dpid_to_role.setdefault(dpid,ROLE_SLAVE)
+                #if dpid not in self.dpid_to_role:
+                #   self.dpid_to_role[dpid] = ROLE_SLAVE
 
             # update loading
             else:
-                load_data = self.socket.recv(liblb.UtilStruct.size)
-                self.cpu_load, self.mem_load = liblb.UtilStruct.unpack(load_data)
+                cpu_load = decode_data['load_cpu']
+                mem_load = decode_data['load_mem']
+                #self.cpu_load, self.mem_load = liblb.UtilStruct.unpack(load_data)
                 self.load_score = ALPHA * self.cpu_load + BETA * self.mem_load
 
     def serve(self):

@@ -3,16 +3,20 @@ import socket
 import struct
 import psutil
 import logging
+import json
+
 
 from ryu.base import app_manager
 from ryu.ofproto import ofproto_v1_3
 from ryu.lib import hub
 from ryu.controller import event
 
+'''
 HeaderStruct = struct.Struct('!B')
 DPStruct = struct.Struct('!I')
 UtilStruct = struct.Struct('!BB')
 RoleStruct = struct.Struct('!IB')
+'''
 
 LOG = logging.getLogger('load_balance_lib')
 
@@ -48,11 +52,11 @@ class LoadBalancer(app_manager.RyuApp):
 
     def add_dpid(self, dpid):
         # send header, 1 for adding dpid
-        header_data = HeaderStruct.pack(1)
-        self.global_socket.sendall(header_data)
 
-        dp_data = DPStruct.pack(dpid)
-        self.global_socket.sendall(dp_data)        
+        header_dp_data = json.dumps({'action': "add_dpid",'dpid': dpid})
+
+        self.global_socket.sendall(header_dp_data)       
+
 
     def _balance_loop(self):
         '''
@@ -64,13 +68,16 @@ class LoadBalancer(app_manager.RyuApp):
             mem_util = get_ram_ultilization()
 
             # send header, 0 for load
-            header_data = HeaderStruct.pack(0)
-            self.global_socket.sendall(header_data)
 
-            load_data = UtilStruct.pack(cpu_util << 8 | mem_util)
-            self.global_socket.sendall(load_data)
-            role_data = self.global_socket.recv(RoleStruct.size)
-            dpid, role = RoleStruct.unpack(role_data)
+            header_load_data = json.dumps({'action':"get_util", 'load_cpu': cpu_util ,'load_mem' : mem_util})
+            
+            self.global_socket.sendall(header_load_data)
+
+            role_data = self.global_socket.recv(64)
+            json.loads(role_data)
+            #dpid, role = RoleStruct.unpack(role_data)
+
+
 
             # Role:
             # [dpid][role]
